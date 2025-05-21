@@ -3,13 +3,14 @@ import { InjectModel } from '@nestjs/mongoose';
 
 import * as bcryptjs from 'bcryptjs';
 
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { CreateUserDto, UpdateAuthDto, RegisterUserDto, LoginDto } from './dto';
+
+
 import { User } from './entities/user.entity';
 import { Model } from 'mongoose';
-import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from './interfaces/jwt-payload';
+import { LoginResponse } from './interfaces/login-response';
 
 @Injectable()
 export class AuthService {
@@ -46,7 +47,16 @@ export class AuthService {
     }
   }
 
-  async login( loginDto: LoginDto ) {
+  async register(registerUserDto:RegisterUserDto): Promise<LoginResponse> {
+    const user = await this.create( registerUserDto );
+
+    return {
+      user: user,
+      token: this.getJwtToken({ id: user._id! })
+    }
+  }
+
+  async login( loginDto: LoginDto ): Promise<LoginResponse> {
     const { email, password } = loginDto;
 
     
@@ -63,15 +73,26 @@ export class AuthService {
     const { password:_, ...rest } = user.toJSON();
 
     return {
-      USER: rest,
+      user: rest,
       token: this.getJwtToken({ id: user.id }),
     }
 
   }
 
 
-  findAll() {
-    return `This action returns all auth`;
+  findAll(): Promise<User[]> {
+    return this.userModel.find();
+  }
+
+  async findUserById( id: string ){
+    const user = await this.userModel.findById( id );
+
+    if ( !user ) {
+      throw new BadRequestException('User does not exist');
+    }
+
+    const { password, ...rest } = user.toJSON();
+    return rest;
   }
 
   findOne(id: number) {
