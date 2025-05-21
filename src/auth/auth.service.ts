@@ -95,6 +95,14 @@ export class AuthService {
     return rest;
   }
 
+  async reNewToken(id: string): Promise<LoginResponse>{
+    const user = await this.findUserById(id);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    return { user, token: this.getJwtToken({ id: user._id }) }
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} auth`;
   }
